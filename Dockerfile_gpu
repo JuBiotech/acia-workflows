@@ -1,0 +1,15 @@
+ARG MAMBA_DOCKERFILE_ACTIVATE=1
+FROM mambaorg/micromamba:2.3.0-cuda11.8.0-ubuntu22.04
+
+RUN micromamba install -y wget unzip -c conda-forge
+RUN micromamba install -y python=3.10 mamba git -c conda-forge gcc tox papermill jupyterlab ipywidgets pytest pytest-xdist fonts-conda-forge
+RUN micromamba install -y ffmpeg -c conda-forge
+
+# TODO: change if version of moviepy changes
+RUN micromamba run -n base pip uninstall moviepy decorator -y
+RUN micromamba run -n base pip install moviepy==1.0.3
+
+# install this as a kernel
+RUN micromamba run -n base python -m ipykernel install --user --name python3 --display-name "Python 3"
+
+CMD jupyter lab --notebook-dir=/home --preferred-dir /home --ip 0.0.0.0
