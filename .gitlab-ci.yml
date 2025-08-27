@@ -1,0 +1,114 @@
+# This file is a template, and might need editing before it works on your project.
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Python.gitlab-ci.yml
+
+# Official language image. Look for the different tagged releases at:
+# https://hub.docker.com/r/library/python/tags/
+image: mambaorg/micromamba:2.3.0-cuda11.8.0-ubuntu22.04
+
+
+stages:
+  - test
+
+before_script:
+  - micromamba install -y wget unzip -c conda-forge
+  - micromamba install -y python=3.10 mamba git -c conda-forge gcc tox papermill jupyterlab ipywidgets pytest pytest-xdist fonts-conda-forge
+  - micromamba install -y ffmpeg -c conda-forge
+  - python --version  # For debugging
+  - pip install pytest-progress
+  # TODO: change if version of moviepy changes
+  - pip uninstall moviepy decorator -y
+  - pip install moviepy==1.0.3
+  - mkdir notebook_runs
+
+.test:
+  stage: test
+  tags:
+    - "biggpu"
+  script:
+    - printenv
+    - python -m pytest --junitxml=report.xml --show-progress tests/$TEST_FILE
+  coverage: '/TOTAL.*\s+(\d+%)/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+      junit: report.xml
+    when: always
+    paths:
+      - notebook_runs/*
+    exclude:
+      - "*.zip"
+      - $CI_PROJECT_DIR/**/data/**/*.tif
+    expire_in: 2 months
+
+# test case studies
+
+#test-growth:
+#  extends: .test
+#  variables:
+#    TEST_FILE: case_studies/test_growth_rate.py
+#
+#test-co_culture:
+#  extends: .test
+#  variables:
+#    TEST_FILE: case_studies/test_co_culture_anlaysis.py
+#    
+#test-single-cell:
+#  extends: .test
+#  variables:
+#    TEST_FILE: case_studies/test_single_cell.py
+
+# test segmentation
+
+test-segmentation-cellpose:
+  extends: .test
+  variables:
+    TEST_FILE: test_segmentation.py
+    SEGMENTATION_NOTEBOOK: Segmentation_Cellpose.ipynb
+
+test-segmentation-omnipose:
+  extends: .test
+  variables:
+    TEST_FILE: test_segmentation.py
+    SEGMENTATION_NOTEBOOK: Segmentation_Omnipose.ipynb
+
+test-segmentation-cellposesam:
+  extends: .test
+  variables:
+    TEST_FILE: test_segmentation.py
+    SEGMENTATION_NOTEBOOK: Segmentation_CellposeSAM.ipynb
+test-segmentation-cpn:
+  extends: .test
+  variables:
+    TEST_FILE: test_segmentation.py
+    SEGMENTATION_NOTEBOOK: Segmentation_CPN.ipynb
+
+
+test-tracking-trackastra:
+  extends: .test
+  variables:
+    TEST_FILE: test_tracking.py
+    TRACKING_NOTEBOOK: Tracking_trackastra.ipynb
+
+
+test-tracking-ultrack:
+  extends: .test
+  variables:
+    TEST_FILE: test_tracking.py
+    TRACKING_NOTEBOOK: Tracking_ultrack.ipynb
+
+test-tracking-laptrack:
+  extends: .test
+  variables:
+    TEST_FILE: test_tracking.py
+    TRACKING_NOTEBOOK: Tracking_laptrack.ipynb
+
+test-tracking-pyuat:
+  extends: .test
+  variables:
+    TEST_FILE: test_tracking.py
+    TRACKING_NOTEBOOK: Tracking_pyuat.ipynb

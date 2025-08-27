@@ -1,0 +1,12 @@
+.Trash-1001/
+*.tif
+*.png
+**/automated_executions/
+.ipynb_checkpoints/
+mambauser/
+
+notebook_runs/
+notebook_runs_old/
+notebook_runs_old2/
+media/
+**/output/
